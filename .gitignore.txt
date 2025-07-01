@@ -1,0 +1,16 @@
+# Archivos de sesión de MATLAB
+*.asv
+
+# Figuras guardadas
+*.fig
+
+# Archivos compilados (MEX)
+*.mex*
+
+# Toolboxes empaquetados
+*.mltbx
+
+# Caches de Simulink y generación de código
+slprj/
+model_rpt/
+codegen/
