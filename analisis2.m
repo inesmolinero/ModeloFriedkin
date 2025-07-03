@@ -80,7 +80,7 @@ if sum(valid) >= 2
                      'YTick', 1:numel(vars), 'YTickLabel', vars);
             title('Cargas factoriales');
         catch ME
-            warning('EFA falló: %s');
+            warning('EFA falló: %s', ME.message);
         end
     end
 end
@@ -106,8 +106,7 @@ if sum(validTime) >= 2
         'VarNames',[featNames,'convTime']);
     disp(mdlTime);
 
-    % Random Forest con importancia OOB habilitada
-        % Random Forest con importancia OOB habilitada y nombres de predictores
+    % Random Forest con importancia OOB habilitada y nombres de predictores
     RF = TreeBagger(200, features(validTime,:), T.convTime(validTime), ...
         'Method','regression','OOBPrediction','On','OOBPredictorImportance','On', ...
         'PredictorNames', featNames);
@@ -115,11 +114,9 @@ if sum(validTime) >= 2
     figure; bar(impOOB);
     set(gca,'XTick',1:numel(featNames),'XTickLabel',featNames);
     title('Importancia OOB - convTime');
-    impOOB = RF.OOBPermutedPredictorDeltaError;
-    figure; bar(impOOB);
-    set(gca,'XTick',1:numel(featNames),'XTickLabel',featNames);
-    title('Importancia OOB - convTime');
 end
+
+%% 6 · Visualizaciones adicionales
 
 %% 6 · Visualizaciones adicionales
 if exist('RF','var')
