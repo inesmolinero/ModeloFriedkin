@@ -1,0 +1,27 @@
+function idx = pickByCentralityBands(pr, k, loc)
+% Selecciona k nodos por bandas de centralidad.
+% Entradas: 
+%    pr: vector con puntuaciones de centralidad PageRank (n x 1), 
+%    k: nº total de trolls a escoger, 
+%    loc: banda a elegir según el nivel de centralidad que queremos(low,
+%    mid o high)
+% Salidas:
+%   idx: vector de índices 
+
+    n = numel(pr);
+    [~, ord] = sort(pr, 'ascend');  % ordenación de nodos por orden ascendente
+    terc = floor(n/3);
+    switch char(loc)
+        case 'low'
+            pool = ord(1:terc);
+        case 'mid'
+            pool = ord(terc+1:2*terc);
+        case 'high'
+            pool = ord(2*terc+1:end);
+        otherwise
+            pool = ord; % por si acaso
+    end
+    % selección determinística: toma los primeros k del pool (o todos si menor)
+    k = min(k, numel(pool));
+    idx = pool(1:k);
+end
