@@ -108,7 +108,7 @@ else
     scriptDir = pwd;  
 end
 resultsRoot = scriptDir;
-tsStr       = datestr(now,'yyyy-mm-dd_HHMMSS');
+tsStr       = datetime("now",'yyyy-mm-dd_HHMMSS');
 resultsDir  = fullfile(resultsRoot, ['resultados_' tsStr]);
 
 if ~exist(resultsDir,'dir'), mkdir(resultsDir); end
@@ -116,7 +116,7 @@ diary(fullfile(resultsDir,'log.txt'));
 fprintf('Directorio de resultados: %s\n', resultsDir);
 
 %% === Config de guardado por réplica ===
-saveRuns   = true;                                      % activar/desactivar guardado
+saveRuns   = false;                                      % activar/desactivar guardado
 runsDir    = fullfile(resultsDir, 'runs');              % carpeta raíz de runs
 if saveRuns && ~exist(runsDir, 'dir'), mkdir(runsDir); end
 
@@ -294,7 +294,6 @@ for i = 1:N
         % --- Residuos ---
         resid = norm(z - x_star, Inf);
 
-
         % --- Métricas básicas ---
         rf = max(z) - min(z);
         sd = std(z);
@@ -409,6 +408,7 @@ for i = 1:N
             % Añadir al índice
             runsIndex = [runsIndex; {string(s.tag), r, string(runFile)}]; 
         end
+
         % ======= Acumuladores =======
         acc.rho_W(r)    = rho_W;
         acc.rho_LambdaW(r)  = rho_LambdaW;
@@ -421,7 +421,6 @@ for i = 1:N
         acc.NDI(r)   = NDI;
         acc.P2(r)    = P2;
         acc.P4(r)    = P4;
-
         acc.propNegNormals(r)      = propNegNorm;
         acc.medianFinalNormals(r)  = medianFinalNorm;
 
@@ -433,7 +432,7 @@ for i = 1:N
 
         
         acc.consenso(r)         = is_cons;
-        acc.P_norm_vs_trolls(r)   = P_nt;
+        %acc.P_norm_vs_trolls(r)   = P_nt;
         acc.stochastic(r)    = is_stoch;
         acc.substochastic(r) = is_subst;
 
@@ -463,22 +462,40 @@ for i = 1:N
     MAgg(cnt).mean_rho_LW      = mean(acc.rho_LambdaW,'omitnan');
 
     MAgg(cnt).mean_rangoFinal  = mean(acc.rangoFinal,'omitnan');
-    MAgg(cnt).mean_stdFinal    = mean(acc.stdFinal,'omitnan');
-    MAgg(cnt).mean_convTime    = mean(acc.convTime,'omitnan');
-    MAgg(cnt).mean_NDI = mean(acc.NDI, 'omitnan');
-    MAgg(cnt).mean_P2  = mean(acc.P2,  'omitnan');
-    MAgg(cnt).mean_P4  = mean(acc.P4,  'omitnan');
-
-    MAgg(cnt).mean_P_norm_vs_trolls = mean(acc.P_norm_vs_trolls,'omitnan');
+    MAgg(cnt).std_rangoFinal  = std(acc.rangoFinal,'omitnan');
     
-    MAgg(cnt).std_convTime   = std(acc.convTime, 'omitnan');
-    MAgg(cnt).std_rangoFinal = std(acc.rangoFinal, 'omitnan');
-    MAgg(cnt).std_stdFinal   = std(acc.stdFinal, 'omitnan');
-    MAgg(cnt).mean_propNegNormals      = mean(acc.propNegNormals,     'omitnan');
+    MAgg(cnt).mean_stdFinal    = mean(acc.stdFinal,'omitnan');
+    MAgg(cnt).std_stdFinal    = std(acc.stdFinal,'omitnan');
+    
+    MAgg(cnt).mean_convTime    = mean(acc.convTime,'omitnan');
+    MAgg(cnt).std_convTime    = std(acc.convTime,'omitnan');
+
+    MAgg(cnt).mean_NDI = mean(acc.NDI, 'omitnan');
+    MAgg(cnt).std_NDI = std(acc.NDI, 'omitnan');
+
+    MAgg(cnt).mean_P2  = mean(acc.P2,  'omitnan');
+    MAgg(cnt).std_P2  = std(acc.P2,  'omitnan');
+
+    MAgg(cnt).mean_P4  = mean(acc.P4,  'omitnan');
+    MAgg(cnt).std_P4  = std(acc.P4,  'omitnan');
+
+    %MAgg(cnt).mean_P_norm_vs_trolls = mean(acc.P_norm_vs_trolls,'omitnan');
+    
+    MAgg(cnt).mean_propNegNormals      = mean(acc.propNegNormals, 'omitnan');
+    MAgg(cnt).std_propNegNormals      = std(acc.propNegNormals, 'omitnan');
+
     MAgg(cnt).mean_medianFinalNormals  = mean(acc.medianFinalNormals, 'omitnan');
-    MAgg(cnt).mean_resid_fp            = mean(acc.resid_fp,           'omitnan');
+    MAgg(cnt).std_medianFinalNormals  = std(acc.medianFinalNormals, 'omitnan');
+
+
+    MAgg(cnt).mean_resid_fp            = mean(acc.resid_fp, 'omitnan');
+    MAgg(cnt).std_resid_fp            = std(acc.resid_fp, 'omitnan');
+
     MAgg(cnt).mean_medianFinal = mean(acc.medianFinal, 'omitnan');
+    MAgg(cnt).std_medianFinal =std(acc.medianFinal, 'omitnan');
+    
     MAgg(cnt).mean_meanFinal =mean(acc.meanFinal, 'omitnan');
+    MAgg(cnt).std_meanFinal =std(acc.meanFinal, 'omitnan');
 
     % Proporciones booleanas
     MAgg(cnt).prop_stochastic      = mean(acc.stochastic);
@@ -504,9 +521,6 @@ for i = 1:N
     MAgg(cnt).mean_nSCC_W_over_n  = mean(acc.nSCC_W  / s.n, 'omitnan');
     MAgg(cnt).mean_nSCC_LW_over_n = mean(acc.nSCC_LW / s.n, 'omitnan');
     
-    MAgg(cnt).mean_convTime    = mean(acc.tconv, 'omitnan');
-    MAgg(cnt).mean_k_needed    = mean(acc.kneed, 'omitnan');
-
     cnt = cnt + 1;
 end
 

@@ -184,3 +184,17 @@ Generando banco de 50 redes por régimen...
     {'n300_trolls90_fuerte_medioPR_lam0.80'      }    300      90       0.057038     0.8    {'fuerte'      }    {'medioPR'}       0.3        {0×0 double}      0.56222          0.91944           0.33222           24.84               0.026852                  0.9999                 -0.28983             7.535e-07           -0.33733           -0.50437        0.46773          0.029344         0.0045568            1                   1                     0                 1              91             1              NaN                 1                0             0.0033333                0.30333               1            63.814     0.36445    151.31           0              24.98    
     {'n300_trolls90_fuerte_altoPR_lam0.80'       }    300      90       0.057038     0.8    {'fuerte'      }    {'altoPR' }       0.3        {0×0 double}      0.50012          0.81849           0.29337           20.98              0.0033786                       1                 -0.37494            7.0434e-07           -0.42217           -0.56446         0.3188          0.027715           0.00367            1                   1                     0                 1           91.02             1              NaN                 1                0             0.0033333                 0.3034               1            51.545     0.40443    169.34           0              20.94    
 
+main_full
+{Error using <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('readmatrix', 'C:\Program Files\MATLAB\R2025a\toolbox\matlab\io\tabular\iofun\readmatrix.m', 11)" style="font-weight:bold">readmatrix</a> (<a href="matlab: opentoline('C:\Program Files\MATLAB\R2025a\toolbox\matlab\io\tabular\iofun\readmatrix.m',11,0)">line 11</a>)
+Unable to find or open
+'C:\Users\inesm\OneDrive\Documentos\tfg\ModeloFriedkin\escenarios\data\Twitter_Data_scores.csv'.
+Check the path and filename or file permissions.
+
+Error in <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('main_full', 'C:\Users\inesm\OneDrive\Documentos\tfg\ModeloFriedkin\escenarios\main_full.m', 16)" style="font-weight:bold">main_full</a> (<a href="matlab: opentoline('C:\Users\inesm\OneDrive\Documentos\tfg\ModeloFriedkin\escenarios\main_full.m',16,0)">line 16</a>)
+x0_raw_all  = readmatrix(fullfile(Dir, 'data', 'Twitter_Data_scores.csv'));
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+} 
+main_full
+Cargadas opiniones iniciales
+x0_base generado: rango [0.000, 1.000]
+Generados 180 escenarios
