@@ -1,0 +1,10 @@
+Directorio de resultados: C:\Users\inesm\OneDrive\Documentos\tfg\ModeloFriedkin\resultados_2025-12-14_191410
+Generando banco de 50 redes por régimen...
+{Unrecognized function or variable 'num_total'.
+
+Error in <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('main_full_2', 'C:\Users\inesm\OneDrive\Documentos\tfg\ModeloFriedkin\main_full_2.m', 132)" style="font-weight:bold">main_full_2</a> (<a href="matlab: opentoline('C:\Users\inesm\OneDrive\Documentos\tfg\ModeloFriedkin\main_full_2.m',132,0)">line 132</a>)
+escenarios(num_total) = struct('n', [], 'trolls', [], 'frac_trolls', [],'loc', '', ...
+           ^^^^^^^^^
+} 
+main_full_2
+x0_base generado: rango [0.000, 1.000]

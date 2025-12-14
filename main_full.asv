@@ -5,7 +5,7 @@ clear; close all; clc;
 %% Configuración inicial
 rango_opiniones = [0, 1];
 semilla_base = 123;          
-max_iteraciones = 500;
+max_iter = 5000;
 tol_consenso = 0.05;
 tol_punto_fijo = 1e-6;  % tolerancia al punto fijo
 n = 300; % número de agentes
@@ -75,7 +75,7 @@ fprintf('Directorio de resultados: %s\n', carpeta_resultados);
 
 
 
-%% Banco de R redes por régimen para reproducibilidad
+%% Establecer las 50 redes por régimen 
 num_replicas = 50;          % R réplicas por cada régimen de densidad
 damp = 0.9;      % damping factor: parámetro de salto aleatorio
 
@@ -85,21 +85,21 @@ rng(semilla_base);
 % fija para las redes base
 redes = struct();   % Banco de R réplicas de A, W y pr (vectores pageRank)
 for i_reg = 1:numel(regimen)
-    reg  = regimen{i_reg};
+    tipo_regimen  = regimen{i_reg};
     pReg = prob_regimen(i_reg);
 
-    redes.(reg).A  = cell(num_replicas,1);
-    redes.(reg).W  = cell(num_replicas,1);
-    redes.(reg).pr = cell(num_replicas,1);
+    redes.(tipo_regimen).A  = cell(num_replicas,1);
+    redes.(tipo_regimen).W  = cell(num_replicas,1);
+    redes.(tipo_regimen).pr = cell(num_replicas,1);
 
     for r = 1:num_replicas
         rng(param.seed_base + 1000*i_reg + r);  % semilla distinta por regimen y réplica
 
-        % --- ER dirigido sin autolazos ---
+        % ER dirigido sin autolazos
         A0 = rand(param.n) < pReg;        % ER dirigido G(n,p) con probabilidad de arista pReg
         A0(1:n+1:end) = 0;          % Anular la diagonal para evitar autolazos
 
-        % --- Garantiza al menos 1 salida por nodo ---
+        % Garantizar al menos 1 salida por nodo
         grado = sum(A0,2);         % Suma de grados de cada fila
         nodos_grado_nulo = (grado == 0);       % Marca nodos con grado = 0
         if any(nodos_grado_nulo)
@@ -119,54 +119,53 @@ for i_reg = 1:numel(regimen)
         pr = centrality(G, 'pagerank', 'FollowProbability', damp);      % Cálculo de la centralidad de cada nodo
         pr = pr / sum(pr);          % Normalización a 1.
 
-        % Recogida n Bank por cada tipo de régimen y réplica
-        redes.(reg).A{r}  = A0;
-        redes.(reg).W{r}  = W0;
-        redes.(reg).pr{r} = pr;
+        % Establecer matrices de influencia y PageRank
+        redes.(tipo_regimen).A{r}  = A0;
+        redes.(tipo_regimen).W{r}  = W0;
+        redes.(tipo_regimen).pr{r} = pr;
     end
 end
 
-%% Generar banco de redes base
-esc = struct('n',{},'trolls',{},'p',{}, 'lam',{}, ...
+%% Establecer los parámetros para cada escenario
+escenarios = struct('n',{},'trolls',{},'p',{}, 'lam',{}, ...
              'seed',{}, 'tag',{}, 'regimen',{}, 'loc',{}, 'fracTrolls',{});
-c = 1;
-
+contador = 1;
 for i_reg = 1:numel(regimen)
-    reg = regimen{i_reg};
-    p   = prob_regimen(i_reg);
+    tipo_regimen = regimen{i_reg};
+    prob_conexion = prob_regimen(i_reg);
     for j_prop_trolls = prop_trolls
-        trolls_total = round(j_prop_trolls * n);
+        num_trolls = round(j_prop_trolls * n);
         for k_lam = lambdas
             for l_banda = 1:numel(bandas_pr)
-                loc = bandas_pr{l_banda};
-                tag_str = sprintf('n%d_trolls%d_%s_%s_lam%.2f', n, trolls_total, reg, loc, k_lam);
-                esc(c) = struct( ...
+                loc_trolls = bandas_pr{l_banda};
+                etiqueta = sprintf('n%d_trolls%d_%s_%s_lam%.2f', n, num_trolls, tipo_regimen, loc_trolls, k_lam);
+                escenarios(contador) = struct( ...
                     'n',    n, ...
-                    'trolls',  trolls_total, ...
-                    'p',    p, ...
+                    'trolls',  num_trolls, ...
+                    'frac_trolls', j_prop_trolls, ...
+                    'loc', loc_trolls, ...
+                    'regimen', tipo_regimen, ...
+                    'p',    prob_conexion, ...
                     'lam',  k_lam, ...
-                    'seed', semilla_base + c, ...
-                    'tag',  tag_str, ...
-                    'regimen', reg, ...
-                    'loc', loc, ...
-                    'fracTrolls', j_prop_trolls ...
+                    'seed', semilla_base + contador, ...
+                    'tag',  etiqueta ...
                 );
-                c = c + 1;
+                contador = contador + 1;
             end
         end
     end
 end
-N = numel(esc);
+N = numel(escenarios);
 fprintf('Generados %d escenarios\n', N);
 
-%% 5 · BUCLE PRINCIPAL — UNA FILA POR RÉPLICA 
-% Preasignación de memoria
-totalFilas = N * num_replicas;
-rows = cell(totalFilas, 17);   % Preasignación de filas y columnas
+%% Bucle de todos los escenarios y réplicas
+total_simulaciones = N * num_replicas;
+rows = cell(total_simulaciones, 17);   % Preasignación de filas y columnas
+
 row_id = 1;
 
 for i = 1:N
-    s = esc(i);
+    s = escenarios(i);
 
     for r = 1:num_replicas
         
@@ -175,65 +174,71 @@ for i = 1:N
         W  = redes.(s.regimen).W{r};
         pr = redes.(s.regimen).pr{r};
 
-        % --- Selección trolls ---
-        trolls_total = s.trolls;
-        if trolls_total > 0
-            idxBand = seleccionar_trolls(pr, trolls_total, s.loc, 42);
-            trolls = idxBand(1:min(trolls_total, length(idxBand)));
+        % Seleccionar nodos para trolls
+        %num_trolls = s.trolls;
+        if num_trolls > 0
+            idx_banda = seleccionar_trolls(pr, s.trolls, s.loc, semilla_base + s);
+            trolls = idx_banda(1:min(s.trolls, length(idx_banda)));
         else
             trolls = [];
         end
         normales = setdiff((1:s.n).', trolls(:));
 
-        % --- x0 y lambdas ---
+        % Establecer x0 y lambdas
         x0 = x0_base; 
         x0(trolls) = -1;
         lambdas = zeros(s.n,1);
         lambdas(normales) = s.lam;
         
-        % Numero de componentes conexas 
-        A_bin  = spones(A) ~= 0;
+        % Cálculo de las componentes fuertemente conexas 
+        A_bin = spones(A) ~= 0;
         Gd = digraph(A_bin);
-        [compStrong, sizes] = conncomp(Gd, 'Type', 'strong');
+        [componentes, sizes] = conncomp(Gd, 'Type', 'strong');
         nSCC = numel(sizes);    
 
-        % --- Punto fijo FJ ---
+        % Punto fijo FJ 
         I = speye(s.n);
         Lam = spdiags(lambdas,0,s.n,s.n);
         M = (I - Lam*W);
         b = (I - Lam)*x0;
         x_star = M \ b;
     
-        % --- Simulación ---
+        % Radio espectral
         rho_LW = abs(eigs(Lam*W, 1, 'lm'));
-        rho = min(rho_LW, 1 - 1e-12);
-        C0 = norm(x0 - x_star, Inf);
-        k_needed = ceil(log(param.tol_fp / max(C0,eps)) / log(rho));
-        k_cap = 10000;
-        Tsim = max(param.iteraciones, min(k_needed, k_cap));
+        rho_LW = min(rho_LW, 1 - 1e-12);
+        
+        % Simulación 
+        %C0 = norm(x0 - x_star, Inf);
+        %k_necesarios = ceil(log(tol_fp / max(C0,eps)) / log(rho_LW));
+        %T_simulacion = max(max_iter, min(k_necesarios, max_iter));
+        %X = simular_friedkin(W, x0, lambdas, T_simulacion, x_star, tol_fp); 
 
-        X = simular_friedkin(W, x0, lambdas, Tsim, x_star, param.tol_fp); 
-        z = X(:,end);
-        zn = z(normales);
+        [X, converge] = simular_friedkin(W, x0, lambdas, max_iter, x_star, tol_fp); 
+        x_final = X(:,end);
+        x_final_normales = x_final(normales);
 
-        % --- Tiempo de convergencia ---
-        d_inf = vecnorm(X - x_star, Inf, 1);
-        tconv = find(d_inf < param.tol_fp, 1, 'first');
-        if isempty(tconv), tconv = NaN; end
+        % Tiempo de convergencia
+        %d_inf = vecnorm(X - x_star, Inf, 1);
+        %tconv = find(d_inf < param.tol_fp, 1, 'first');
+        %if isempty(tconv), tconv = NaN; end
+        
+        if converge tconv = size(X,2) - 1;
+        else
+            tconv = NaN; 
 
         % --- Métricas ---
-        rf  = max(z) - min(z);
-        sd  = std(z);
-        medianaFinal = median(z);
-        meanFinal  = mean(z);
+        rango_f  = max(x_final) - min(x_final);
+        sd_f  = std(x_final);
+        mediana_f = median(x_final);
+        mean_f  = mean(x_final);
 
-        propNeg = mean(zn < 0);
-        medianaNorm = median(zn);
+        prop_neg_f = mean(x_final_normales < 0);
+        mediana_norm_f = median(x_final_normales);
 
-        Delta = z - z.';
-        NDI = sum(sum(W .* (Delta.^2)));
+        Delta = x_final - x_final.';
+        NDI_f = sum(sum(W .* (Delta.^2)));
 
-        resid = norm(z - x_star, Inf);
+        resid_f = norm(x_final - x_star, Inf);
 
         % --- Guardar fila ---
         rows{row_id,1} = s.tag;
@@ -243,17 +248,17 @@ for i = 1:N
         rows{row_id,5} = s.fracTrolls;
         rows{row_id,6} = s.lam;
 
-        rows{row_id,7} = rf;
-        rows{row_id,8} = sd;
-        rows{row_id,9} = medianaFinal;
-        rows{row_id,10} = meanFinal;
-        rows{row_id,11} = propNeg;
-        rows{row_id,12} = medianaNorm;
+        rows{row_id,7} = rango_f;
+        rows{row_id,8} = sd_f;
+        rows{row_id,9} = mediana_f;
+        rows{row_id,10} = mean_f;
+        rows{row_id,11} = prop_neg_f;
+        rows{row_id,12} = mediana_norm_f;
 
-        rows{row_id,13} = NDI;
-        rows{row_id,14} = resid;
+        rows{row_id,13} = NDI_f;
+        rows{row_id,14} = resid_f;
         rows{row_id,15} = tconv;
-        rows{row_id,16}= rho;
+        rows{row_id,16}= rho_LW;
         rows{row_id,17}= nSCC;
         row_id = row_id + 1;
     end
@@ -271,39 +276,40 @@ fprintf('Guardado: resultados.csv\n');
 diary off;
 
 %% ========================================================================
-%  FUNCIONES AUXILIARES
-%  ========================================================================
+% FUNCIONES AUXILIARES
 
-function idxBand = seleccionar_trolls(pr, n_trolls, nivel_banda, seed)
+%%  Seleccionar trolls según banda de centralidad
+function idx_banda = seleccionar_trolls(pr, n_trolls, nivel_banda, seed)
 % Selecciona trolls según banda de centralidad (bajoPR, medioPR, altoPR)
     rng(seed, 'twister');
     n = length(pr);
-    [~, sortIdx] = sort(pr, 'descend');
+    [~, idx] = sort(pr, 'descend');
     
     tercil = floor(n/3);
     
     switch nivel_banda
         case 'bajoPR'
-            band = sortIdx(2*tercil+1:end);
+            banda = idx(2*tercil+1:end);
         case 'medioPR'
-            band = sortIdx(tercil+1:2*tercil);
+            banda = idx(tercil+1:2*tercil);
         case 'altoPR'
-            band = sortIdx(1:tercil);
+            banda = idx(1:tercil);
         otherwise
             error('Banda desconocida: %s', nivel_banda);
     end
     
-    if n_trolls > length(band)
-        warning('numTrolls (%d) > tamaño banda (%d). Se toman todos los de la banda.', ...
-                n_trolls, length(band));
-        idxBand = band;
+    if n_trolls > length(banda)
+        warning('numTrolls (%d) > tamaño banda (%d). Se toman todos los de la banda.', n_trolls, length(banda));
+        idx_banda = banda;
     else
-        perm = randperm(length(band), n_trolls);
-        idxBand = band(perm);
+        perm = randperm(length(banda), n_trolls);
+        idx_banda = banda(perm);
     end
 end
 
-function X = simular_friedkin(W, x0, lambdas, n_iter, x_star, tol)
+%% Función de simulación del modelo de FJ
+
+function [X,converge] = simular_friedkin(W, x0, lambdas, n_iter, x_star, tol)
 % Simula el modelo de Friedkin-Johnsen
 % W: matriz de influencia (n x n)
 % x0: opiniones iniciales (n x 1)
@@ -315,7 +321,8 @@ function X = simular_friedkin(W, x0, lambdas, n_iter, x_star, tol)
     n = length(x0);
     X = zeros(n, n_iter+1);
     X(:,1) = x0;
-    
+    converge = false;
+
     for t = 1:n_iter
         x_prev = X(:,t);
         x_actual = (1 - lambdas) .* x0 + lambdas .* (W * x_prev);
@@ -324,6 +331,7 @@ function X = simular_friedkin(W, x0, lambdas, n_iter, x_star, tol)
         % Convergencia anticipada
         if norm(x_actual - x_star, Inf) < tol
             X = X(:, 1:t+1);
+            converge = true;
             break;
         end
     end

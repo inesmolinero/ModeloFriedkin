@@ -7,8 +7,8 @@ rango_opiniones = [0, 1];
 semilla_base = 123;          
 max_iter = 5000;
 tol_consenso = 0.05;
-tol_punto_fijo = 1e-6;  % tolerancia al punto fijo
-n = 300; % número de agentes
+tol_pf = 1e-6;  
+n = 300; 
 
 %% Opiniones iniciales
 % Lectura
@@ -72,9 +72,6 @@ diary(fullfile(carpeta_resultados,'log.txt'));
 fprintf('Directorio de resultados: %s\n', carpeta_resultados);
 
 
-
-
-
 %% Establecer las 50 redes por régimen 
 num_replicas = 50;          % R réplicas por cada régimen de densidad
 damp = 0.9;      % damping factor: parámetro de salto aleatorio
@@ -86,17 +83,17 @@ rng(semilla_base);
 redes = struct();   % Banco de R réplicas de A, W y pr (vectores pageRank)
 for i_reg = 1:numel(regimen)
     tipo_regimen  = regimen{i_reg};
-    pReg = prob_regimen(i_reg);
+    p_reg = prob_regimen(i_reg);
 
     redes.(tipo_regimen).A  = cell(num_replicas,1);
     redes.(tipo_regimen).W  = cell(num_replicas,1);
     redes.(tipo_regimen).pr = cell(num_replicas,1);
 
     for r = 1:num_replicas
-        rng(param.seed_base + 1000*i_reg + r);  % semilla distinta por regimen y réplica
+        rng(semilla_base + i_reg + r);  % semilla distinta por regimen y réplica
 
         % ER dirigido sin autolazos
-        A0 = rand(param.n) < pReg;        % ER dirigido G(n,p) con probabilidad de arista pReg
+        A0 = rand(n) < p_reg;        % ER dirigido G(n,p) con probabilidad de arista pReg
         A0(1:n+1:end) = 0;          % Anular la diagonal para evitar autolazos
 
         % Garantizar al menos 1 salida por nodo
@@ -111,7 +108,7 @@ for i_reg = 1:numel(regimen)
         end
 
         % --- Normalización por filas ---
-       % grado = sum(A0,2);
+        grado = sum(A0,2);
         W0 = A0 ./ grado;
 
         % --- PageRank ---
@@ -127,9 +124,12 @@ for i_reg = 1:numel(regimen)
 end
 
 %% Establecer los parámetros para cada escenario
-escenarios = struct('n',{},'trolls',{},'p',{}, 'lam',{}, ...
-             'seed',{}, 'tag',{}, 'regimen',{}, 'loc',{}, 'fracTrolls',{});
-contador = 1;
+n_esc = numel(regimen) * numel(prop_trolls) * numel(lambdas) * numel(bandas_pr);
+
+escenarios(n_esc) = struct('n', [], 'trolls', [], 'frac_trolls', [], ...
+                               'loc', '', 'regimen', '', 'p', [], ...
+                               'lam', [], 'seed', [], 'tag', '');
+c = 1;
 for i_reg = 1:numel(regimen)
     tipo_regimen = regimen{i_reg};
     prob_conexion = prob_regimen(i_reg);
@@ -139,7 +139,7 @@ for i_reg = 1:numel(regimen)
             for l_banda = 1:numel(bandas_pr)
                 loc_trolls = bandas_pr{l_banda};
                 etiqueta = sprintf('n%d_trolls%d_%s_%s_lam%.2f', n, num_trolls, tipo_regimen, loc_trolls, k_lam);
-                escenarios(contador) = struct( ...
+                escenarios(c) = struct( ...
                     'n',    n, ...
                     'trolls',  num_trolls, ...
                     'frac_trolls', j_prop_trolls, ...
@@ -147,10 +147,10 @@ for i_reg = 1:numel(regimen)
                     'regimen', tipo_regimen, ...
                     'p',    prob_conexion, ...
                     'lam',  k_lam, ...
-                    'seed', semilla_base + contador, ...
+                    'seed', semilla_base + c, ...
                     'tag',  etiqueta ...
                 );
-                contador = contador + 1;
+                c = c + 1;
             end
         end
     end
@@ -160,9 +160,20 @@ fprintf('Generados %d escenarios\n', N);
 
 %% Bucle de todos los escenarios y réplicas
 total_simulaciones = N * num_replicas;
-rows = cell(total_simulaciones, 17);   % Preasignación de filas y columnas
+%rows = cell(total_simulaciones, 17);   % Preasignación de filas y columnas
 
-row_id = 1;
+%row_id = 1;
+
+resultados = table('Size', [total_simulaciones, 17], ...
+    'VariableTypes', {'string','double','string','string','double','double',...
+                      'double','double','double','double','double','double',...
+                      'double','double','double','double','double'}, ...
+    'VariableNames', {'tag','replica','regimen','loc','fracTrolls','lambda',...
+                      'rangoFinal','stdFinal','medianFinal','meanFinal',...
+                      'propNeg','medianNorm','NDI','resid','tconv','rho_lambdaW','nSCC'});
+
+
+idx_fila = 1;
 
 for i = 1:N
     s = escenarios(i);
@@ -177,7 +188,7 @@ for i = 1:N
         % Seleccionar nodos para trolls
         %num_trolls = s.trolls;
         if num_trolls > 0
-            idx_banda = seleccionar_trolls(pr, s.trolls, s.loc, semilla_base + s);
+            idx_banda = seleccionar_trolls(pr, s.trolls, s.loc, semilla_base + i);
             trolls = idx_banda(1:min(s.trolls, length(idx_banda)));
         else
             trolls = [];
@@ -213,7 +224,7 @@ for i = 1:N
         %T_simulacion = max(max_iter, min(k_necesarios, max_iter));
         %X = simular_friedkin(W, x0, lambdas, T_simulacion, x_star, tol_fp); 
 
-        [X, converge] = simular_friedkin(W, x0, lambdas, max_iter, x_star, tol_fp); 
+        [X, converge] = simular_friedkin(W, x0, lambdas, max_iter, x_star, tol_pf); 
         x_final = X(:,end);
         x_final_normales = x_final(normales);
 
@@ -241,38 +252,44 @@ for i = 1:N
         resid_f = norm(x_final - x_star, Inf);
 
         % --- Guardar fila ---
-        rows{row_id,1} = s.tag;
-        rows{row_id,2} = r;
-        rows{row_id,3} = s.regimen;
-        rows{row_id,4} = s.loc;
-        rows{row_id,5} = s.fracTrolls;
-        rows{row_id,6} = s.lam;
+        %rows{row_id,1} = s.tag;
+        %rows{row_id,2} = r;
+        %rows{row_id,3} = s.regimen;
+        %rows{row_id,4} = s.loc;
+        %rows{row_id,5} = s.fracTrolls;
+        %rows{row_id,6} = s.lam;
 
-        rows{row_id,7} = rango_f;
-        rows{row_id,8} = sd_f;
-        rows{row_id,9} = mediana_f;
-        rows{row_id,10} = mean_f;
-        rows{row_id,11} = prop_neg_f;
-        rows{row_id,12} = mediana_norm_f;
+        %rows{row_id,7} = rango_f;
+        %rows{row_id,8} = sd_f;
+        %rows{row_id,9} = mediana_f;
+        %rows{row_id,10} = mean_f;
+        %rows{row_id,11} = prop_neg_f;
+        %rows{row_id,12} = mediana_norm_f;
 
-        rows{row_id,13} = NDI_f;
-        rows{row_id,14} = resid_f;
-        rows{row_id,15} = t_conv;
-        rows{row_id,16}= rho_LW;
-        rows{row_id,17}= nSCC;
-        row_id = row_id + 1;
+        %rows{row_id,13} = NDI_f;
+        %rows{row_id,14} = resid_f;
+        %rows{row_id,15} = t_conv;
+        %rows{row_id,16}= rho_LW;
+        %rows{row_id,17}= nSCC;
+        %row_id = row_id + 1;
+        resultados(idx_fila, :) = {s.tag, r, s.regimen, s.loc, ...
+                                      s.frac_trolls, s.lam, rango_f, sd_f, ...
+                                      mediana_f, mean_f, prop_neg_f, mediana_norm_f, ...
+                                      NDI_f, resid_f, t_conv, rho_LW, nSCC};
+        
+        idx_fila = idx_fila + 1;
     end
 end
 
 %% Exportar resultados
-headers = {'tag','replica','regimen','loc','fracTrolls','lambda',...
-           'rangoFinal','stdFinal','medianFinal','meanFinal',...
-           'propNeg','medianNorm','NDI','resid','tconv','rho_lambdaW','nSCC'};
-tabla = cell2table(rows,'VariableNames',headers);
-writetable(tabla, fullfile(carpeta_resultados,'resultados.csv'));
-save(fullfile(carpeta_resultados,'resultados.mat'),'tabla');
+%headers = {'tag','replica','regimen','loc','fracTrolls','lambda',...
+           %'rangoFinal','stdFinal','medianFinal','meanFinal',...
+           %'propNeg','medianNorm','NDI','resid','tconv','rho_lambdaW','nSCC'};
+%tabla = cell2table(rows,'VariableNames',headers);
+writetable(resultados, fullfile(carpeta_resultados,'resultados.csv'));
+save(fullfile(carpeta_resultados,'resultados.mat'),'resultados');
 
-fprintf('Guardado: resultados.csv\n');
+fprintf('Guardado: resultados.csv y resultados.mat\n');
 diary off;
 
 %% ========================================================================
@@ -288,11 +305,11 @@ function idx_banda = seleccionar_trolls(pr, n_trolls, nivel_banda, seed)
     tercil = floor(n/3);
     
     switch nivel_banda
-        case 'bajoPR'
+        case 'bajo_pr'
             banda = idx(2*tercil+1:end);
-        case 'medioPR'
+        case 'medio_pr'
             banda = idx(tercil+1:2*tercil);
-        case 'altoPR'
+        case 'alto_pr'
             banda = idx(1:tercil);
         otherwise
             error('Banda desconocida: %s', nivel_banda);
