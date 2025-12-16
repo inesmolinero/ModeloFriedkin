@@ -1,0 +1,4 @@
+Directorio de resultados: C:\Users\inesm\OneDrive\Documentos\tfg\ModeloFriedkin\resultados_2025-12-15_180200
+Generando banco de 50 redes por régimen...
+Generados 324 escenarios
+Guardado: resultados.csv y resultados.mat
