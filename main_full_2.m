@@ -6,18 +6,13 @@ clear; close all; clc;
 rango_opiniones = [0, 1];
 semilla_base = 123;          
 max_iter = 5000;
-tol_consenso = 0.05;
 tol_pf = 1e-6;  
 n = 300; 
 
 %% Opiniones iniciales
 % Lectura de datos
-if ~isempty(mfilename)
-    directorio = fileparts(mfilename('fullpath'));
-else
-    directorio = pwd;  
-end
-x0_raw  = readmatrix(fullfile(directorio, 'data', 'Twitter_Data_scores.csv'));
+directorio = fileparts(mfilename('fullpath'));
+x0_raw  = readmatrix(fullfile(directorio, 'data', 'Twitter_data_scores.csv'));
 x0_raw  = x0_raw(:); % convertir a vector columna
 x0_raw  = x0_raw(~isnan(x0_raw)); % eliminar nulos
 assert(~isempty(x0_raw), 'El archivo csv está vacío');
@@ -37,11 +32,11 @@ else
 end
 
 % Escalado al rango rango_opiniones
-xmin = min(x_vector);
-xmax = max(x_vector);
+x_min = min(x_vector);
+x_max = max(x_vector);
 
-if xmax > xmin
-    x_vector = (x_vector - xmin) / (xmax - xmin); % [0,1]
+if x_max > x_min
+    x_vector = (x_vector - x_min) / (x_max - x_min); % [0,1]
 else
     x_vector = zeros(n,1);
 end
@@ -50,7 +45,7 @@ fprintf('x0_base generado en rango [%.3f, %.3f]\n', min(x0_base), max(x0_base));
 
 %% Definir escenarios de simulación 
 
-% Tres regímenes ER 
+% Tres regimenes ER 
 p_base = log(n)/n;
 regimen = {'desconectada','umbral','fuerte'};
 prob_regimen = [0.5, 1.0, 3.0] * p_base;
@@ -65,8 +60,8 @@ prop_trolls = 0:0.06:0.30;
 lambdas = 0.1:0.15:0.85;        
                
 %% Crear directorio de resultados
-str_fecha       = char(datetime('now','Format','yyyy-MM-dd_HHmmss'));
-carpeta_resultados  = fullfile(directorio, ['resultados_' str_fecha]);
+str_fecha = char(datetime('now','Format','yyyy-MM-dd_HHmmss'));
+carpeta_resultados = fullfile(directorio, ['resultados_' str_fecha]);
 
 if ~exist(carpeta_resultados,'dir'), mkdir(carpeta_resultados); end
 %diary(fullfile(carpeta_resultados,'log.txt'));  
@@ -164,7 +159,7 @@ for i_reg = 1:numel(regimen)
     end
 end
 %N = numel(escenarios);
-fprintf('Generados %d escenarios\n', N);
+fprintf('Generados %d escenarios\n', n_esc);
 
 %% Bucle de todos los escenarios y réplicas
 total_simulaciones = n_esc * num_replicas;
@@ -210,8 +205,9 @@ for i = 1:n_esc
         lambdas(normales) = s.lam;
         
         % Cálculo de las componentes fuertemente conexas 
-        A_bin = spones(A) ~= 0;
-        Gd = digraph(A_bin);
+        %A_bin = spones(A) ~= 0;
+        %Gd = digraph(A_bin);
+        ,Gd = digraph(A);
         [componentes, sizes] = conncomp(Gd, 'Type', 'strong');
         nSCC = numel(sizes);    
 
@@ -273,7 +269,7 @@ fprintf('Guardado: resultados.csv y resultados.mat\n');
 
 %%  Seleccionar trolls según banda de centralidad
 function idx_banda = seleccionar_trolls(pr, n_trolls, nivel_banda, seed)
-% Selecciona trolls según banda de centralidad (bajoPR, medioPR, altoPR)
+% Selecciona trolls según banda de centralidad (bajo_pr, medio_pr, alto_pr)
     rng(seed, 'twister');
     n = length(pr);
     [~, idx] = sort(pr, 'descend');

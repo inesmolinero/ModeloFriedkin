@@ -1,3 +1,0 @@
-Directorio de resultados: C:\Users\inesm\OneDrive\Documentos\tfg\ModeloFriedkin\resultados_2025-12-01_212540
-Generando banco de 50 redes por régimen...
-Guardado: todas_las_replicas.csv
