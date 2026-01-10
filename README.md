@@ -21,7 +21,7 @@ Se considera una sociedad compuesta por:
 ## Estructura del repositorio
 
 - `main.m`: script principal para la ejecución de las simulaciones.
-- `analisis_final`: análisis estadístico en Python de los resultados obtenidos en MATLAB de las simulaciones del modelo
+- `analisis_final.ipynb`: análisis estadístico en Python de los resultados obtenidos en MATLAB de las simulaciones del modelo
 - `analisis_sentimiento.ipynb`: análisis de sentimiento realizado en Python con el objetivo de obtener las opiniones iniciales a partir de un dataset público de Kaggle. 
 - `resultados_YYYY-MM-DD_HHMMSS\`: resultados de la simulación para la fecha en la que se ha ejecutado el script
 ---
