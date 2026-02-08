@@ -70,7 +70,7 @@ fprintf('Directorio de resultados: %s\n', carpeta_resultados);
 
 %% Establecer las 50 redes por régimen 
 num_replicas = 50; % cantidad de réplicas por cada régimen de densidad
-damp = 0.9; % damping factor, parámetro de salto aleatorio
+alpha = 0.9; % parámetro de salto aleatorio
 
 fprintf('Generando banco de %d redes por régimen \n', num_replicas);
 rng(semilla_base);
