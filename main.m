@@ -1,6 +1,7 @@
 %% Simulación del modelo de Friedkin-Johnsen
 
 clear; close all; clc;
+tic;
 
 %% Configuración inicial
 rango_opiniones = [0, 1];
@@ -112,7 +113,7 @@ for i_reg = 1:numel(regimen)
 
         % Centralidad PageRank 
         G  = digraph(A0); % Grafo dirigido a partir de la matriz de adyacencia
-        pr = centrality(G, 'pagerank', 'FollowProbability', damp); % Centralidad de cada nodo
+        pr = centrality(G, 'pagerank', 'FollowProbability', alpha); % Centralidad de cada nodo
         %pr = pr / sum(pr); % Normalización a 1.
 
         % Establecer matrices de influencia y PageRank
@@ -180,7 +181,7 @@ for i = 1:n_esc
 
     for r = 1:num_replicas
         
-        % --- Red de la réplica r ---
+        % Red de cada réplica (indice r)
         %A  = redes.(s.regimen).A{r};
         %W  = redes.(s.regimen).W{r};
         %pr = redes.(s.regimen).pr{r};
@@ -211,7 +212,7 @@ for i = 1:n_esc
         [componentes, sizes] = conncomp(Gd, 'Type', 'strong');
         nSCC = numel(sizes);    
 
-        % Punto fijo FJ 
+        % Punto fijo teórico 
         I = speye(s.n);
         Lam = spdiags(lambdas,0,s.n,s.n);
         M = (I - Lam*W);
@@ -263,13 +264,15 @@ save(fullfile(carpeta_resultados,'resultados.mat'),'resultados');
 
 fprintf('Guardado: resultados.csv y resultados.mat\n');
 
+tiempo_total = toc;
+fprintf('Tiempo total de simulación: %.2f segundos (%.2f minutos)\n', ...
+        tiempo_total, tiempo_total/60);
 
 %% ========================================================================
 % FUNCIONES AUXILIARES
 
 %%  Seleccionar trolls según banda de centralidad
 function idx_banda = seleccionar_trolls(pr, n_trolls, nivel_banda, seed)
-% Selecciona trolls según banda de centralidad (bajo_pr, medio_pr, alto_pr)
     rng(seed, 'twister');
     n = length(pr);
     [~, idx] = sort(pr, 'descend');
@@ -299,14 +302,6 @@ end
 %% Función de simulación del modelo de FJ
 
 function [X,converge] = simular_friedkin(W, x0, lambdas, n_iter, x_star, tol)
-% Simula el modelo de Friedkin-Johnsen
-% W: matriz de influencia (n x n)
-% x0: opiniones iniciales (n x 1)
-% lambdas: vector de prejuicios (n x 1)
-% n_iter: número de iteraciones
-% x_star: punto fijo teórico (para convergencia)
-% tol: tolerancia de convergencia
-
     n = length(x0);
     X = zeros(n, n_iter+1);
     X(:,1) = x0;
