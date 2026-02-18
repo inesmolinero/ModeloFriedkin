@@ -1,5 +1,4 @@
-%% Simulación del modelo de Friedkin-Johnsen
-
+%% Análisis de sentimiento y simulación Friedkin-Johnsen
 clear; close all; clc;
 tic;
 
@@ -11,11 +10,20 @@ tol_pf = 1e-6;
 n = 300; 
 
 %% Opiniones iniciales
-% Lectura de datos
 directorio = fileparts(mfilename('fullpath'));
-x0_raw  = readmatrix(fullfile(directorio, 'data', 'Twitter_data_scores.csv'));
-x0_raw  = x0_raw(:); % convertir a vector columna
-x0_raw  = x0_raw(~isnan(x0_raw)); % eliminar nulos
+cd(directorio);
+
+% Ejecutar análisis de sentimiento
+muestra_py = pyrunfile("analisis_sentimiento.py", "muestra");
+% Extraer columnas
+textos_py = muestra_py.get('clean_text').values.tolist();
+sentimientos_py = muestra_py.get('sentimiento').values.tolist();
+
+% Convertir a tipos de MATLAB
+muestra_matlab = table(cell(textos_py)', ...
+                       double(sentimientos_py)', ...
+                       'VariableNames', {'texto', 'sentimiento'});
+x0_raw = muestra_matlab.sentimiento;
 assert(~isempty(x0_raw), 'El archivo csv está vacío');
 
 %% Construir x0_base a tamaño n y escalar al rango de opiniones
