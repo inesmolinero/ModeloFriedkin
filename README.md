@@ -22,15 +22,14 @@ Se considera una sociedad compuesta por:
 
 - `main.m`: script principal para la ejecución de las simulaciones.
 - `analisis_final.ipynb`: análisis estadístico en Python de los resultados obtenidos en MATLAB de las simulaciones del modelo
-- `analisis_sentimiento.ipynb`: análisis de sentimiento realizado en Python con el objetivo de obtener las opiniones iniciales a partir de un dataset público de Kaggle. 
+- `analisis_sentimiento.py`: análisis de sentimiento realizado en Python con el objetivo de obtener las opiniones iniciales a partir de un dataset público de Kaggle. 
 - `resultados_YYYY-MM-DD_HHMMSS\`: resultados de la simulación para la fecha en la que se ha ejecutado el script
 ---
 
 ## Ejecución
-Para realizar el análisis de sentimiento, abrir python y ejecutar el notebook `analisis_sentimiento` ajustando previamente las rutas correspondientes. 
-Para ejecutar las simulaciones, abrir MATLAB y ejecutar `main`.
+Para ejecutar las simulaciones y el análisis de sentimiento, abrir MATLAB y ejecutar `main.mat`.
 
 Los resultados de las simulaciones se guardarán en la carpeta `resultados_YYYY-MM-DD_HHMMSS\` 
 
-Para obtener los análisis correspondientes de estos resultados, abrir Python, cambiar las rutas correspondientes y ejecutar `analisis_final`. 
+Para obtener los análisis correspondientes de estos resultados, abrir Python, cambiar las rutas correspondientes y ejecutar `analisis_final.ipynb`. 
 
