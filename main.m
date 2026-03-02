@@ -1,7 +1,7 @@
 %% Análisis de sentimiento y simulación Friedkin-Johnsen
 clear; close all; clc;
 tic;
-graficar_redes = false;
+graficar_redes = true;
 %% Configuración inicial
 rango_opiniones = [0, 1];
 semilla_base = 123;          
@@ -247,13 +247,16 @@ for i = 1:n_esc
                                       resid_f, t_conv, rho_LW, nSCC};
         
         idx_fila = idx_fila + 1;
+      
     end
 end
 
 %% Comparación de topologías con opiniones iniciales
 if graficar_redes 
     % ER ya generada
-    A_er = redes.desconectada.replicas(1).A;
+    A_er_d = redes.desconectada.replicas(1).A;
+    A_er_u = redes.umbral.replicas(1).A;
+    A_er_f = redes.fuerte.replicas(1).A;
     
     % Generar Small-World
     A_sw = generar_small_world(n, 4, 0.1);
@@ -264,33 +267,53 @@ if graficar_redes
     figure;
     
     % ER
-    subplot(1,3,1);
-    G1 = digraph(A_er);
+    subplot(1,5,1);
+    G1 = digraph(A_er_d);
     h1 = plot(G1,'Layout','force');
-    h1.NodeCData = x0_base;
+    h1.NodeCData = x0;
     colormap(jet);
     clim([-1 1]);
-    title('Erdős–Rényi');
+    title('Erdős–Rényi- Desconectada');
+
     colorbar;
-    
+    subplot(1,5,2);
+    G1 = digraph(A_er_u);
+    h1 = plot(G1,'Layout','force');
+    h1.NodeCData = x0;
+    colormap(jet);
+    clim([-1 1]);
+    title('Erdős–Rényi -Umbral');
+    colorbar;
+
+    subplot(1,5,3);
+    G1 = digraph(A_er_f);
+    h1 = plot(G1,'Layout','force');
+    h1.NodeCData = x0;
+    colormap(jet);
+    clim([-1 1]);
+    title('Erdős–Rényi- Fuerte');
+    colorbar;
+
     % Small-world
-    subplot(1,3,2);
+    subplot(1,5,4);
     G2 = digraph(A_sw);
     h2 = plot(G2,'Layout','force');
-    h2.NodeCData = x0_base;
+    h2.NodeCData = x0;
     clim([-1 1]);
     title('Small-World');
     
     % Scale-free
-    subplot(1,3,3);
+    subplot(1,5,5);
     G3 = digraph(A_sf);
     h3 = plot(G3,'Layout','force');
-    h3.NodeCData = x0_base;
+    h3.NodeCData = x0;
     clim([-1 1]);
     title('Scale-Free');
     
     sgtitle('Comparación de topologías con opiniones iniciales');
 end
+
+
 %% Exportar resultados
 writetable(resultados, fullfile(carpeta_resultados,'resultados.csv'));
 save(fullfile(carpeta_resultados,'resultados.mat'),'resultados');
