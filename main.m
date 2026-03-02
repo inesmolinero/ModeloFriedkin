@@ -1,7 +1,7 @@
 %% Análisis de sentimiento y simulación Friedkin-Johnsen
 clear; close all; clc;
 tic;
-graficar_redes = true;
+graficar_redes = false;
 %% Configuración inicial
 rango_opiniones = [0, 1];
 semilla_base = 123;          
