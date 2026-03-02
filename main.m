@@ -1,7 +1,6 @@
 %% Análisis de sentimiento y simulación Friedkin-Johnsen
 clear; close all; clc;
 tic;
-graficar_redes = false;
 %% Configuración inicial
 rango_opiniones = [0, 1];
 semilla_base = 123;          
@@ -251,68 +250,6 @@ for i = 1:n_esc
     end
 end
 
-%% Comparación de topologías con opiniones iniciales
-if graficar_redes 
-    % ER ya generada
-    A_er_d = redes.desconectada.replicas(1).A;
-    A_er_u = redes.umbral.replicas(1).A;
-    A_er_f = redes.fuerte.replicas(1).A;
-    
-    % Generar Small-World
-    A_sw = generar_small_world(n, 4, 0.1);
-    
-    % Generar Scale-Free
-    A_sf = generar_scale_free(n, 5, 3);
-    
-    figure;
-    
-    % ER
-    subplot(1,5,1);
-    G1 = digraph(A_er_d);
-    h1 = plot(G1,'Layout','force');
-    h1.NodeCData = x0;
-    colormap(jet);
-    clim([-1 1]);
-    title('Erdős–Rényi- Desconectada');
-
-    colorbar;
-    subplot(1,5,2);
-    G1 = digraph(A_er_u);
-    h1 = plot(G1,'Layout','force');
-    h1.NodeCData = x0;
-    colormap(jet);
-    clim([-1 1]);
-    title('Erdős–Rényi -Umbral');
-    colorbar;
-
-    subplot(1,5,3);
-    G1 = digraph(A_er_f);
-    h1 = plot(G1,'Layout','force');
-    h1.NodeCData = x0;
-    colormap(jet);
-    clim([-1 1]);
-    title('Erdős–Rényi- Fuerte');
-    colorbar;
-
-    % Small-world
-    subplot(1,5,4);
-    G2 = digraph(A_sw);
-    h2 = plot(G2,'Layout','force');
-    h2.NodeCData = x0;
-    clim([-1 1]);
-    title('Small-World');
-    
-    % Scale-free
-    subplot(1,5,5);
-    G3 = digraph(A_sf);
-    h3 = plot(G3,'Layout','force');
-    h3.NodeCData = x0;
-    clim([-1 1]);
-    title('Scale-Free');
-    
-    sgtitle('Comparación de topologías con opiniones iniciales');
-end
-
 
 %% Exportar resultados
 writetable(resultados, fullfile(carpeta_resultados,'resultados.csv'));
@@ -376,53 +313,4 @@ function [X,converge] = simular_friedkin(W, x0, lambdas, n_iter, x_star, tol)
         end
     end
 end
-%% Generar red scale-free tipo Barabási–Albert
 
-function A = generar_scale_free(n, m0, m)
-
-    % m0 nodos iniciales totalmente conectados
-    A = zeros(n);
-    
-    % Red inicial completa
-    A(1:m0,1:m0) = 1;
-    A(1:m0+1:end) = 0;
-    
-    grados = sum(A,2);
-    
-    for i = m0+1:n
-        
-        prob = grados(1:i-1) / sum(grados(1:i-1));
-        conexiones = randsample(i-1, m, true, prob);
-        
-        for j = conexiones'
-            A(i,j) = 1;
-        end
-        
-        grados = sum(A,2);
-    end
-end
-%% Generar red small-world tipo Watts–Strogatz
-
-function A = generar_small_world(n, k, beta)
-
-    % Red regular en anillo
-    A = zeros(n);
-    
-    for i = 1:n
-        for j = 1:k
-            vecino = mod(i+j-1,n) + 1;
-            A(i,vecino) = 1;
-        end
-    end
-    
-    % Rewire con probabilidad beta
-    for i = 1:n
-        for j = find(A(i,:))
-            if rand < beta
-                nuevo = randi(n);
-                A(i,j) = 0;
-                A(i,nuevo) = 1;
-            end
-        end
-    end
-end
